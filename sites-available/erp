@@ -1,0 +1,35 @@
+# Default server configuration
+#
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        
+        server_name erp.altesis-pro.com;
+        add_header Strict-Transport-Security   "max-age=31536000; includeSubDomains" always;
+        return 301 https://$host$request_uri;
+}
+server {
+        listen      443 ssl http2 default_server;
+        listen [::]:443 ssl http2 default_server;
+        server_name erp.altesis-pro.com;
+ 
+        proxy_buffering         off;
+        # Force timeouts if the backend dies
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
+        location / {
+                    proxy_set_header    X-Forwarded-Proto  "https";
+                    proxy_set_header    Host               $host;
+                    proxy_set_header    X-Real-IP          $remote_addr;
+                    proxy_set_header    X-Forwarded-For    $proxy_add_x_forwarded_for;
+                    add_header Strict-Transport-Security   "max-age=31536000; includeSubDomains" always;
+                    proxy_pass  http://127.0.0.1:8069;
+        }
+        location ~* ^/.+/static {
+                    root /usr/lib/python3/dist-packages/odoo/addons;
+                    try_files $uri $uri/ =404;
+        }
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    ssl_certificate /etc/letsencrypt/live/erp.altesis-pro.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/erp.altesis-pro.com/privkey.pem; # managed by Certbot
+}
